@@ -36,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.DecimalFormat
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.tan
 
 data class HistoryItem(
     val id: Long = System.currentTimeMillis(),
@@ -296,6 +299,41 @@ fun CalculatorScreen() {
         }
     }
 
+    fun handleTrig(function: String) {
+        triggerHaptic()
+        errorMessage = null
+        val value = currentInput.toDoubleOrNull() ?: run {
+            errorMessage = "Invalid Number"
+            return
+        }
+
+        val radians = Math.toRadians(value)
+        val result = when (function) {
+            "sin" -> sin(radians)
+            "cos" -> cos(radians)
+            "tan" -> tan(radians).takeUnless { it.isNaN() || it.isInfinite() }
+            "cot" -> {
+                val sine = sin(radians)
+                if (abs(sine) < 1e-12) null else cos(radians) / sine
+            }
+            else -> null
+        }
+
+        if (result == null || result.isNaN() || result.isInfinite()) {
+            errorMessage = "Invalid Result"
+            return
+        }
+
+        val cleaned = if (abs(result) < 1e-12) 0.0 else result
+        currentInput = if (cleaned % 1.0 == 0.0) {
+            cleaned.toLong().toString()
+        } else {
+            cleaned.toString()
+        }
+        expressionTokens = emptyList()
+        isEvaluated = true
+    }
+
     fun handlePercent() {
         triggerHaptic()
         try {
@@ -359,7 +397,8 @@ fun CalculatorScreen() {
                 onBackspace = ::handleBackspace,
                 onToggleSign = ::handleToggleSign,
                 onPercent = ::handlePercent,
-                onDecimal = { handleNumber(".") }
+                onDecimal = { handleNumber(".") },
+                onTrig = ::handleTrig
             )
         }
     }
@@ -579,12 +618,21 @@ fun KeypadSection(
     onBackspace: () -> Unit,
     onToggleSign: () -> Unit,
     onPercent: () -> Unit,
-    onDecimal: () -> Unit
+    onDecimal: () -> Unit,
+    onTrig: (String) -> Unit
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
+        // Trigonometry row
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CalcButton("sin", Modifier.weight(1f), isAction = true, onClick = { onTrig("sin") })
+            CalcButton("cos", Modifier.weight(1f), isAction = true, onClick = { onTrig("cos") })
+            CalcButton("tan", Modifier.weight(1f), isAction = true, onClick = { onTrig("tan") })
+            CalcButton("cot", Modifier.weight(1f), isAction = true, onClick = { onTrig("cot") })
+        }
+
         // Row 1
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             CalcButton("AC", Modifier.weight(1f), isDanger = true, onClick = onClear)
