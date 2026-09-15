@@ -26,32 +26,6 @@ android {
         jvmTarget = "17"
     }
 
-    signingConfigs {
-        create("release") {
-            val propsFile = rootProject.file("keystore.properties")
-
-            if (propsFile.exists()) {
-                val props = java.util.Properties().apply {
-                    propsFile.inputStream().use { load(it) }
-                }
-
-                storeFile = rootProject.file(
-                    props.getProperty("storeFile")
-                )
-                storePassword = props.getProperty("storePassword")
-                keyAlias = props.getProperty("keyAlias")
-                keyPassword = props.getProperty("keyPassword")
-            }
-        }
-    }
-
-    buildTypes {
-        getByName("release") {
-            signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-        }
-    }
-
     buildFeatures {
         compose = true
     }
